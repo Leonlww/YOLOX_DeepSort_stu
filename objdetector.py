@@ -1,93 +1,61 @@
 import torch
 import numpy as np
-from models.experimental import attempt_load
-from utils.general import non_max_suppression, scale_coords
-from utils.datasets import letterbox
-from utils.torch_utils import select_device
+import cv2
 
-import objtracker
-
-OBJ_LIST = ['person', 'car', 'bus', 'truck']
-DETECTOR_PATH = 'weights/yolov5m.pt'
-
-class baseDet(object):
-    def __init__(self):
-        self.img_size = 640
-        self.threshold = 0.3
-        self.stride = 1
-
-    def build_config(self):
-        self.frameCounter = 0
-
-    def feedCap(self, im, func_status):
-        retDict = {
-            'frame': None,
-            'list_of_ids': None,
-            'obj_bboxes': []
-        }
-        self.frameCounter += 1
-        im, obj_bboxes = objtracker.update(self, im)
-        retDict['frame'] = im
-        retDict['obj_bboxes'] = obj_bboxes
-
-        return retDict
-
-    def init_model(self):
-        raise EOFError("Undefined model type.")
-
-    def preprocess(self):
-        raise EOFError("Undefined model type.")
-
-    def detect(self):
-        raise EOFError("Undefined model type.")
+from YOLOX.yolox.data.data_augment import preproc
+from YOLOX.yolox.data.datasets import COCO_CLASSES
+from YOLOX.yolox.exp.build import get_exp_by_name,get_exp_by_file
+from YOLOX.yolox.utils import postprocess
+from utils.visualize import vis
 
 
-class Detector(baseDet):
-    def __init__(self):
+
+# COCO_MEAN = (0.485, 0.456, 0.406)
+# COCO_STD = (0.229, 0.224, 0.225)
+
+
+
+
+class Detector():
+    def __init__(self, model='yolox-tiny', ckpt='/datav/shared/leon/YOLOX_DeepSort_stu/YOLOX/YOLOX_outputs/yolox_tiny/best_ckpt.pth'):
         super(Detector, self).__init__()
-        self.init_model()
-        self.build_config()
 
-    def init_model(self):
-        self.weights = DETECTOR_PATH
-        self.device = '0' if torch.cuda.is_available() else 'cpu'
-        self.device = select_device(self.device)
-        model = attempt_load(self.weights, map_location=self.device)
-        model.to(self.device).eval()
-        model.half()
-        self.m = model
-        self.names = model.module.names if hasattr(
-            model, 'module') else model.names
+        self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = torch.device('cpu')
+        self.exp = get_exp_by_name(model)
+        self.test_size = self.exp.test_size 
+        self.model = self.exp.get_model()
+        self.model.to(self.device)
+        self.model.eval()
+        
+        # checkpoint = torch.load(ckpt, map_location="cpu")
+        checkpoint = torch.load(ckpt)
 
-    def preprocess(self, img):
-        img0 = img.copy()
-        img = letterbox(img, new_shape=self.img_size)[0]
-        img = img[:, :, ::-1].transpose(2, 0, 1)
-        img = np.ascontiguousarray(img)
-        img = torch.from_numpy(img).to(self.device)
-        img = img.half()  # 半精度
-        img /= 255.0  # 图像归一化
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
-        return img0, img
+        self.model.load_state_dict(checkpoint["model"])
 
-    def detect(self, im):
-        im0, img = self.preprocess(im)
-        pred = self.m(img, augment=False)[0]
-        pred = pred.float()
-        pred = non_max_suppression(pred, self.threshold, 0.4)
-        pred_boxes = []
-        for det in pred:
-            if det is not None and len(det):
-                det[:, :4] = scale_coords(
-                    img.shape[2:], det[:, :4], im0.shape).round()
-                for *x, conf, cls_id in det:
-                    lbl = self.names[int(cls_id)]
-                    if not lbl in OBJ_LIST:
-                        continue
-                    x1, y1 = int(x[0]), int(x[1])
-                    x2, y2 = int(x[2]), int(x[3])
-                    pred_boxes.append(
-                        (x1, y1, x2, y2, lbl, conf))
-        return im, pred_boxes
 
+
+    def detect(self, raw_img, visual=True, conf=0.5):
+        info = {}
+        img, ratio = preproc(raw_img, self.test_size)
+        info['raw_img'] = raw_img
+        info['img'] = img
+
+        img = torch.from_numpy(img).unsqueeze(0)
+        img = img.to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(img)
+            outputs = postprocess(
+                    outputs, self.exp.num_classes, self.exp.test_conf, self.exp.nmsthre)[0].cpu().numpy()
+        if outputs[0] is None:
+            info['boxes'], info['scores'], info['class_ids'],info['box_nums']=None,None,None,0
+        else:
+            info['boxes'] = outputs[:, 0:4]/ratio
+            info['scores'] = outputs[:, 4] * outputs[:, 5]
+            info['class_ids'] = outputs[:, 6]
+            info['box_nums'] = outputs.shape[0]
+        
+        if visual:
+            info['visual'] = vis(info['raw_img'], info['boxes'], info['scores'], info['class_ids'], conf, COCO_CLASSES)
+        return info
