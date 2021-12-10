@@ -47,7 +47,11 @@ class Detector():
         with torch.no_grad():
             outputs = self.model(img)
             outputs = postprocess(
-                    outputs, self.exp.num_classes, self.exp.test_conf, self.exp.nmsthre)[0].cpu().numpy()
+                    outputs, self.exp.num_classes, self.exp.test_conf, self.exp.nmsthre)
+            if outputs[0] != None:
+                outputs = outputs[0].cpu().numpy()
+            else:
+                pass
         if outputs[0] is None:
             info['boxes'], info['scores'], info['class_ids'],info['box_nums']=None,None,None,0
         else:
@@ -55,7 +59,7 @@ class Detector():
             info['scores'] = outputs[:, 4] * outputs[:, 5]
             info['class_ids'] = outputs[:, 6]
             info['box_nums'] = outputs.shape[0]
-        
+        # 可视化绘图
         if visual:
             info['visual'] = vis(info['raw_img'], info['boxes'], info['scores'], info['class_ids'], conf, COCO_CLASSES)
         return info
