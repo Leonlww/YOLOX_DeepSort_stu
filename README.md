@@ -1,5 +1,5 @@
 ## My human head tracked result demo
-![](https://github.com/Leonlww/YOLOX_DeepSort_stu/result/road_attacked_track_result_demo2.gif)
+![image](https://github.com/Leonlww/YOLOX_DeepSort_stu/result/road_attacked_track_result_demo2.gif)
 <hr/>
 
 ## How to use this code to track using your own trained YOLOX detection model with DeepSort
