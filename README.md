@@ -5,7 +5,7 @@
 
 ## How to use this code to track using your own trained YOLOX detection model with DeepSort
 
- First, you have to have a trained detection model.
+ First, you have to get a trained detection model.
 
 <hr/>
 
