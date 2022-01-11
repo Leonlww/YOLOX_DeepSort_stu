@@ -1,23 +1,16 @@
 import torch
-import numpy as np
-import cv2
-
 from YOLOX.yolox.data.data_augment import preproc
 from YOLOX.yolox.data.datasets import COCO_CLASSES
-from YOLOX.yolox.exp.build import get_exp_by_name,get_exp_by_file
+from YOLOX.yolox.exp.build import get_exp_by_name
 from YOLOX.yolox.utils import postprocess
 from utils.visualize import vis
 
 
 
-# COCO_MEAN = (0.485, 0.456, 0.406)
-# COCO_STD = (0.229, 0.224, 0.225)
-
-
 
 
 class Detector():
-    def __init__(self, model='yolox-tiny', ckpt='/datav/shared/leon/YOLOX_DeepSort_stu/YOLOX/YOLOX_outputs/yolox_tiny/best_ckpt.pth'):
+    def __init__(self, model='yolox-m', ckpt='自己训练的yolox检测模型.pth'):
         super(Detector, self).__init__()
 
         self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
@@ -59,7 +52,7 @@ class Detector():
             info['scores'] = outputs[:, 4] * outputs[:, 5]
             info['class_ids'] = outputs[:, 6]
             info['box_nums'] = outputs.shape[0]
-        # 可视化绘图
+        
         if visual:
             info['visual'] = vis(info['raw_img'], info['boxes'], info['scores'], info['class_ids'], conf, COCO_CLASSES)
         return info

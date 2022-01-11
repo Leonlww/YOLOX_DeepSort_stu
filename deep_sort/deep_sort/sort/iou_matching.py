@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import numpy as np
 from . import linear_assignment
 
-
+#计算两个框的IOU
 def iou(bbox, candidates):
     """Computer intersection over union.
 
@@ -27,8 +27,9 @@ def iou(bbox, candidates):
     candidates_tl = candidates[:, :2]
     candidates_br = candidates[:, :2] + candidates[:, 2:]
 
-    tl = np.c_[np.maximum(bbox_tl[0], candidates_tl[:, 0])[:, np.newaxis],
-               np.maximum(bbox_tl[1], candidates_tl[:, 1])[:, np.newaxis]]
+    # np.c_ Translates slice objects to concatenation along the second axis.     np.c_操作就是按列拼接[1,2,3]和[4,5,6]变成[[1,4]
+    tl = np.c_[np.maximum(bbox_tl[0], candidates_tl[:, 0])[:, np.newaxis],                                        #    [2,5]
+               np.maximum(bbox_tl[1], candidates_tl[:, 1])[:, np.newaxis]]                                        #    [3,6]]
     br = np.c_[np.minimum(bbox_br[0], candidates_br[:, 0])[:, np.newaxis],
                np.minimum(bbox_br[1], candidates_br[:, 1])[:, np.newaxis]]
     wh = np.maximum(0., br - tl)
@@ -38,10 +39,12 @@ def iou(bbox, candidates):
     area_candidates = candidates[:, 2:].prod(axis=1)
     return area_intersection / (area_bbox + area_candidates - area_intersection)
 
-
+# 计算tracks和detections之间的IOU距离成本矩阵
 def iou_cost(tracks, detections, track_indices=None,
              detection_indices=None):
     """An intersection over union distance metric.
+
+    用于计算tracks和detections之间的iou距离矩阵
 
     Parameters
     ----------

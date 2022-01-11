@@ -6,6 +6,14 @@ import logging
 
 from .model import Net
 
+'''
+特征提取器：
+提取对应bounding box中的特征, 得到一个固定维度的embedding作为该bounding box的代表，
+供计算相似度时使用。
+
+模型训练是按照传统ReID的方法进行，使用Extractor类的时候输入为一个list的图片，得到图片对应的特征。
+'''
+
 class Extractor(object):
     def __init__(self, model_path, use_cuda=True):
         self.net = Net(reid=True)
@@ -17,12 +25,13 @@ class Extractor(object):
         self.net.to(self.device)
         self.size = (64, 128)
         self.norm = transforms.Compose([
+            # RGB图片数据范围是[0-255]，需要先经过ToTensor除以255归一化到[0,1]之后，
+            # 再通过Normalize计算(x - mean)/std后，将数据归一化到[-1,1]。
             transforms.ToTensor(),
+            # mean=[0.485, 0.456, 0.406] and std=[0.229, 0.224, 0.225]是从imagenet训练集中算出来的
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
         
-
-
     def _preprocess(self, im_crops):
         """
         TODO:
@@ -38,9 +47,9 @@ class Extractor(object):
         im_batch = torch.cat([self.norm(_resize(im, self.size)).unsqueeze(0) for im in im_crops], dim=0).float()
         return im_batch
 
-
+# __call__()是一个非常特殊的实例方法。该方法的功能类似于在类中重载 () 运算符，
+# 使得类实例对象可以像调用普通函数那样，以“对象名()”的形式使用。
     def __call__(self, im_crops):
-
         im_batch = self._preprocess(im_crops)
         with torch.no_grad():
             im_batch = im_batch.to(self.device)

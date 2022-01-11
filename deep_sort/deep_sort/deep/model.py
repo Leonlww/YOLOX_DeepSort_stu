@@ -46,7 +46,7 @@ def make_layers(c_in,c_out,repeat_times, is_downsample=False):
     return nn.Sequential(*blocks)
 
 class Net(nn.Module):
-    def __init__(self, num_classes=751 ,reid=False):
+    def __init__(self, num_classes=751, reid=False):
         super(Net,self).__init__()
         # 3 128 64
         self.conv = nn.Sequential(
@@ -70,6 +70,7 @@ class Net(nn.Module):
         self.avgpool = nn.AvgPool2d((8,4),1)
         # 256 1 1 
         self.reid = reid
+
         self.classifier = nn.Sequential(
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),

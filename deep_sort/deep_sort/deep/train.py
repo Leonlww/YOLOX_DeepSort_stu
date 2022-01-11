@@ -28,6 +28,7 @@ if torch.cuda.is_available() and not args.no_cuda:
 root = args.data_dir
 train_dir = os.path.join(root,"train")
 test_dir = os.path.join(root,"test")
+
 transform_train = torchvision.transforms.Compose([
     torchvision.transforms.RandomCrop((128,64),padding=4),
     torchvision.transforms.RandomHorizontalFlip(),
@@ -48,6 +49,7 @@ testloader = torch.utils.data.DataLoader(
     batch_size=64,shuffle=True
 )
 num_classes = max(len(trainloader.dataset.classes), len(testloader.dataset.classes))
+print("num_classes = %s" %num_classes)
 
 # net definition
 start_epoch = 0
@@ -177,11 +179,12 @@ def lr_decay():
         print("Learning rate adjusted to {}".format(lr))
 
 def main():
-    for epoch in range(start_epoch, start_epoch+40):
+    total_epoches = 40
+    for epoch in range(start_epoch, start_epoch+total_epoches):
         train_loss, train_err = train(epoch)
         test_loss, test_err = test(epoch)
         draw_curve(epoch, train_loss, train_err, test_loss, test_err)
-        if (epoch+1)%20==0:
+        if (epoch+1)%(total_epoches//2)==0:
             lr_decay()
 
 
