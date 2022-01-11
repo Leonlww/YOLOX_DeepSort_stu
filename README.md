@@ -1,5 +1,5 @@
 ## My human head tracked result
-![image](https://github.com/Leonlww/YOLOX_DeepSort_stu/blob/main/result/road_attacked_track_result_demo2.gif)
+![image](https://github.com/Leonlww/YOLOX_DeepSort_stu/master/result/road_attacked_track_result_demo2.gif)
 
 <hr/>
 
